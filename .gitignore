@@ -205,3 +205,18 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Training artifacts (local only, never commit to git)
+checkpoints/
+qwen_lora/
+wandb/
+*.gguf
+*.safetensors
+*.bin
+outputs/
+
+# Secret files (extra belt-and-suspenders on top of .env above)
+.env.local
+.env.*.local
+secrets/
+
