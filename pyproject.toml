@@ -33,8 +33,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Fast CUDA kernels used by Qwen 3.5's hybrid attention + SSM layers.
+# Must be installed AFTER torch is already present (see [tool.uv] below).
+# Install via:   uv sync --extra flash
 flash = [
-    "flash-linear-attention",
+    "flash-linear-attention==0.5.0",
     "causal_conv1d==1.6.0",
 ]
 
@@ -49,6 +52,20 @@ build-backend = "hatchling.build"
 packages = ["src/qwen_finetune"]
 
 [tool.uv]
+# `causal_conv1d` and `flash-linear-attention` import torch inside their
+# `setup.py`, so they cannot be built in an isolated PEP 517 env (torch would
+# be missing). We disable build isolation for them and rely on torch already
+# being installed in the project venv.
+#
+# Workflow:
+#   1. `uv sync`                  # installs torch + everything else
+#   2. `uv sync --extra flash`    # builds these kernels against the active torch
+no-build-isolation-package = [
+    "flash-linear-attention",
+    "causal_conv1d",
+    "causal-conv1d",
+]
+
 # Some unsloth components are best installed from git (newer than PyPI).
 # Keep these as explicit overrides so `uv sync` pulls the right revisions.
 [tool.uv.sources]

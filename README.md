@@ -37,11 +37,32 @@ uv sync
 
 `uv sync` 는 `pyproject.toml` 의 의존성(`torch`, `unsloth`, `trl`, `transformers`, `datasets`, …)을 `.venv/` 에 설치합니다. Unsloth 관련 패키지는 최신 기능이 필요하므로 GitHub 소스에서 직접 가져오도록 `[tool.uv.sources]` 에 지정되어 있습니다.
 
-> **참고**: `flash-linear-attention` / `causal_conv1d` 는 빌드 환경이 까다로워 기본 의존성에서 제외했습니다. 필요하다면 `torch==2.8.0` 환경에서 다음과 같이 별도로 설치하세요.
->
-> ```bash
-> uv pip install --no-build-isolation flash-linear-attention "causal_conv1d==1.6.0"
-> ```
+### 2-a. (권장) 빠른 CUDA 커널 설치 — `--extra flash`
+
+Qwen 3.5 는 하이브리드 아키텍처(attention + SSM 레이어)이기 때문에
+[`flash-linear-attention`](https://github.com/fla-org/flash-linear-attention) /
+[`causal_conv1d`](https://github.com/Dao-AILab/causal-conv1d) 가 없으면 순수 torch 경로로
+**fallback** 됩니다 (학습/추론 모두 수 배 느려짐). 설치는 `torch` 가 이미 깔린 뒤에 해야 하므로 2-step 입니다.
+
+```bash
+uv sync                  # torch / unsloth / trl 등 기본 환경 구축
+uv sync --extra flash    # torch 위에서 causal_conv1d + FLA 커널 빌드
+```
+
+`pyproject.toml` 의 `[tool.uv].no-build-isolation-package` 설정 덕분에 `--no-build-isolation`
+플래그를 손으로 넘기지 않아도 uv 가 알아서 격리 없이 빌드합니다.
+
+빌드가 실패하면 대부분 다음 중 하나입니다.
+
+- `nvcc` 가 PATH 에 없음 → `nvcc --version` 확인, 필요 시 해당 CUDA toolkit 설치
+- 빌드 툴 부재 → `sudo apt install -y build-essential ninja-build`
+- wheel 을 못 찾는 경우 → `CAUSAL_CONV1D_FORCE_BUILD=TRUE uv sync --extra flash`
+
+확인:
+
+```bash
+uv run python -c "import causal_conv1d, fla; print(causal_conv1d.__version__, fla.__version__)"
+```
 
 ## 3. 비밀 토큰 설정 (git 에 올라가지 않음)
 

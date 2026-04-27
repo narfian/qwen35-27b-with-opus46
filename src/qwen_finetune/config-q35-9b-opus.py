@@ -12,7 +12,7 @@ from typing import Dict, List, Optional
 
 @dataclass
 class ModelConfig:
-    model_name: str = "unsloth/Qwen3.5-27B"
+    model_name: str = "unsloth/Qwen3.5-9B"
     max_seq_length: int = 32768
     load_in_4bit: bool = True
     load_in_8bit: bool = False
@@ -63,8 +63,8 @@ class DataConfig:
 
 @dataclass
 class TrainConfig:
-    output_dir: str = "./checkpoints/Qwen3.5-27B"
-    per_device_train_batch_size: int = 1
+    output_dir: str = "./checkpoints/Qwen3.5-9B"
+    per_device_train_batch_size: int = 3
     gradient_accumulation_steps: int = 6
     warmup_ratio: float = 0.05
     num_train_epochs: float = 2.0
@@ -80,13 +80,13 @@ class TrainConfig:
     save_strategy: str = "steps"
     report_to: str = "wandb"  # set to "none" to disable W&B
     train_on_responses_only: bool = True
-    lora_save_dir: str = "./qwen35_27b_opus_lora"
+    lora_save_dir: str = "./qwen35_9b_opus_lora"
 
 
 @dataclass
 class PushConfig:
-    merged_repo_suffix: str = "Qwopus3.5-27B"
-    gguf_repo_suffix: str = "Qwopus3.5-27B-GGUF"
+    merged_repo_suffix: str = "Qwen3.5-9B-opus"
+    gguf_repo_suffix: str = "Qwen3.5-9B-opus-GGUF"
     merged_save_method: str = "merged_16bit"
     gguf_quantization_methods: List[str] = field(
         default_factory=lambda: ["q4_k_m", "q8_0", "bf16"]
