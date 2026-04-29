@@ -15,14 +15,14 @@ import sys
 from dataclasses import fields, is_dataclass
 from typing import Any
 
-from .config import PipelineConfig, default_config
+from .config import PipelineConfig, default_config, list_config_presets
 
 
 def _add_dataclass_args(parser: argparse.ArgumentParser, dc: Any, prefix: str) -> None:
     """Flatten a dataclass into `--group-field` CLI arguments.
 
     Only scalar fields (no lists / dicts) are exposed; complex overrides should
-    be done by editing `config.py` directly.
+    be done by adding or editing a config preset.
     """
 
     for f in fields(dc):
@@ -34,7 +34,10 @@ def _add_dataclass_args(parser: argparse.ArgumentParser, dc: Any, prefix: str) -
         cli_name = f"--{prefix}-{f.name.replace('_', '-')}"
         default = getattr(dc, f.name)
 
-        kwargs: dict = {"default": default, "help": f"(default: {default})"}
+        kwargs: dict = {
+            "default": argparse.SUPPRESS,
+            "help": f"(preset default: {default})",
+        }
         if isinstance(default, bool):
             kwargs["type"] = lambda v: str(v).lower() in ("1", "true", "yes", "y")
         elif default is None:
@@ -66,6 +69,7 @@ def _build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     cfg = default_config()
+    preset_choices = list_config_presets()
 
     for name, help_text in (
         ("train", "Run the full SFT training pipeline."),
@@ -74,6 +78,12 @@ def _build_parser() -> argparse.ArgumentParser:
         ("prepare-data", "Load, format, and filter the dataset (no training)."),
     ):
         p = sub.add_parser(name, help=help_text)
+        p.add_argument(
+            "--config-preset",
+            default="default",
+            choices=preset_choices,
+            help="Config preset to load before applying CLI overrides.",
+        )
         _add_dataclass_args(p, cfg.model, "model")
         _add_dataclass_args(p, cfg.data, "data")
         _add_dataclass_args(p, cfg.train, "train")
@@ -86,7 +96,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
 
-    cfg = default_config()
+    cfg = default_config(args.config_preset)
     cfg = _apply_overrides(cfg, args)
 
     if args.command == "train":

@@ -1,13 +1,14 @@
-"""Configuration objects for the fine-tuning pipeline.
-
-All defaults reproduce the values used in the reference Colab notebook
-(`Qwopus3-5-27b-Colab.ipynb`). Override via CLI flags or by editing this file.
-"""
+"""Configuration objects and preset loading for the fine-tuning pipeline."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from importlib import import_module
+from pkgutil import iter_modules
 from typing import Dict, List, Optional
+
+
+CONFIG_PRESET_PACKAGE = f"{__package__}.config_presets"
 
 
 @dataclass
@@ -85,8 +86,8 @@ class TrainConfig:
 
 @dataclass
 class PushConfig:
-    merged_repo_suffix: str = "Qwopus3.5-27B"
-    gguf_repo_suffix: str = "Qwopus3.5-27B-GGUF"
+    merged_repo_suffix: str = "Qwen3.5-27B-opus"
+    gguf_repo_suffix: str = "Qwen3.5-27B-opus-GGUF"
     merged_save_method: str = "merged_16bit"
     gguf_quantization_methods: List[str] = field(
         default_factory=lambda: ["q4_k_m", "q8_0", "bf16"]
@@ -105,5 +106,51 @@ class PipelineConfig:
     wandb_project: Optional[str] = "qwen35-27b-with-opus46"
 
 
-def default_config() -> PipelineConfig:
-    return PipelineConfig()
+def _normalize_preset_name(name: str) -> str:
+    return name.strip().replace("-", "_")
+
+
+def list_config_presets() -> list[str]:
+    """Return available config preset names for CLI choices/help."""
+
+    package = import_module(CONFIG_PRESET_PACKAGE)
+    return sorted(
+        module.name.replace("_", "-")
+        for module in iter_modules(package.__path__)
+        if not module.name.startswith("_")
+    )
+
+
+def load_config_preset(name: str = "default") -> PipelineConfig:
+    module_name = _normalize_preset_name(name)
+
+    qualified_module_name = f"{CONFIG_PRESET_PACKAGE}.{module_name}"
+
+    try:
+        module = import_module(qualified_module_name)
+    except ModuleNotFoundError as exc:
+        if exc.name != qualified_module_name:
+            raise
+        available = ", ".join(list_config_presets())
+        raise ValueError(
+            f"Unknown config preset: {name!r}. Available presets: {available}"
+        ) from exc
+
+    try:
+        cfg = module.build_config()
+    except AttributeError as exc:
+        raise ValueError(
+            f"Config preset {name!r} must define build_config()."
+        ) from exc
+
+    if not isinstance(cfg, PipelineConfig):
+        raise TypeError(
+            f"Config preset {name!r} returned {type(cfg).__name__}, "
+            "expected PipelineConfig."
+        )
+
+    return cfg
+
+
+def default_config(preset: str = "default") -> PipelineConfig:
+    return load_config_preset(preset)

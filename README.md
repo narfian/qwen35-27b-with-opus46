@@ -104,10 +104,17 @@ uv run qwen-finetune prepare-data
 uv run qwen-finetune train
 ```
 
+기본값 외의 프리셋을 쓰려면 `--config-preset`을 지정합니다:
+
+```bash
+uv run qwen-finetune train --config-preset q35-9b-opus
+```
+
 주요 옵션은 CLI 플래그로도 덮어쓸 수 있습니다:
 
 ```bash
 uv run qwen-finetune train \
+  --config-preset q35-27b-opus \
   --train-output-dir ./checkpoints/qwen35-27b-run1 \
   --train-num-train-epochs 2 \
   --train-per-device-train-batch-size 6 \
@@ -122,7 +129,7 @@ W&B 를 끄고 싶다면:
 uv run qwen-finetune train --train-report-to none
 ```
 
-학습이 끝나면 LoRA 어댑터가 `./qwen_lora/` 에 저장됩니다 (`--train-lora-save-dir` 로 변경 가능).
+학습이 끝나면 LoRA 어댑터가 프리셋의 `train.lora_save_dir` 에 저장됩니다 (`--train-lora-save-dir` 로 변경 가능).
 
 ### Hugging Face Hub 로 푸시
 
@@ -132,7 +139,7 @@ uv run qwen-finetune train --train-report-to none
   uv run qwen-finetune push-merged
   ```
 
-  → `https://huggingface.co/<your-username>/Qwopus3.5-27B`
+  → `https://huggingface.co/<your-username>/Qwen3.5-27B-opus`
 
 - **GGUF (q4_k_m / q8_0 / bf16)**:
 
@@ -140,9 +147,10 @@ uv run qwen-finetune train --train-report-to none
   uv run qwen-finetune push-gguf
   ```
 
-  → `https://huggingface.co/<your-username>/Qwopus3.5-27B-GGUF`
+  → `https://huggingface.co/<your-username>/Qwen3.5-27B-opus-GGUF`
 
 레포 이름을 바꾸려면 `--push-merged-repo-suffix`, `--push-gguf-repo-suffix` 플래그를 사용하세요.
+학습 때 사용한 프리셋과 같은 값을 지정하면 해당 LoRA 경로와 Hub suffix를 그대로 사용합니다.
 
 ## 5. 프로젝트 구조
 
@@ -155,7 +163,8 @@ uv run qwen-finetune train --train-report-to none
 └── src/qwen_finetune/
     ├── __init__.py
     ├── cli.py                    # `qwen-finetune` CLI 엔트리
-    ├── config.py                 # ModelConfig / DataConfig / TrainConfig / PushConfig
+    ├── config.py                 # 공통 config dataclass + preset loader
+    ├── config_presets/           # default / 모델별 preset / template
     ├── data.py                   # HF 데이터셋 로드·정규화·필터링
     ├── model.py                  # Unsloth 모델 + LoRA 로드
     ├── train.py                  # SFTTrainer 실행
@@ -165,7 +174,7 @@ uv run qwen-finetune train --train-report-to none
 
 ## 6. 커스터마이징
 
-기본값은 Colab 노트북과 동일합니다. 영구적인 변경은 `src/qwen_finetune/config.py` 의 dataclass 필드를 수정하면 되고, 1회성 실험은 CLI 플래그로 조절하면 됩니다. 예:
+기본값은 Colab 노트북과 동일합니다. 영구적인 변경이나 모델별 조합은 `src/qwen_finetune/config_presets/` 에 새 preset 파일을 추가해 관리하고, 모든 수정 가능 항목을 한 번에 보고 싶으면 `template.py` 를 복사해 시작하면 됩니다. 1회성 실험은 CLI 플래그로 조절하면 됩니다. 예:
 
 - 다른 베이스 모델 사용: `--model-model-name unsloth/Qwen3-14B-unsloth-bnb-4bit`
 - 더 짧은 학습: `--train-max-steps 200`
