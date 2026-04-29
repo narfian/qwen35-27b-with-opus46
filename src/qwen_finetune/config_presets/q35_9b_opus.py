@@ -13,6 +13,7 @@ def build_config() -> PipelineConfig:
         train=TrainConfig(
             output_dir="./checkpoints/Qwen3.5-9B",
             per_device_train_batch_size=3,
+            gradient_accumulation_steps=12,
             lora_save_dir="./qwen35_9b_opus_lora",
         ),
         push=PushConfig(

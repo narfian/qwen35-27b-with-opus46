@@ -210,6 +210,7 @@ __marimo__/
 checkpoints/
 qwen_lora/
 wandb/
+unsloth_compiled_cache/
 *.gguf
 *.safetensors
 *.bin
