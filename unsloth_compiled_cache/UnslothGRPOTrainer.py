@@ -3056,7 +3056,7 @@ class _UnslothGRPOTrainer(Trainer):
                     if hasattr(self, 'llm'):
                         if getattr(self.llm.llm_engine.vllm_config.model_config, 'enable_sleep_mode', False):
                             self.llm.wake_up()
-                    all_outputs = self.llm.generate(vllm_inputs, sampling_params=sampling_params, use_tqdm=False, lora_request = self.model.load_lora('grpo_trainer_lora_model', load_tensors = True))
+                    all_outputs = self.llm.generate(vllm_inputs, sampling_params=sampling_params, use_tqdm=False, lora_request = self.model.load_lora('grpo_trainer_lora_model_' + (os.environ.get('CUDA_VISIBLE_DEVICES', '0').replace(',','')), load_tensors = True))
 
                     if hasattr(self, 'llm'):
                         if getattr(self.llm.llm_engine.vllm_config.model_config, 'enable_sleep_mode', False):

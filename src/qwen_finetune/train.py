@@ -33,6 +33,11 @@ def run_training(cfg: PipelineConfig) -> None:
     load_env()
     _setup_wandb(cfg)
 
+    if cfg.train.fla_ampere_safe_autotune:
+        from .runtime_patches import apply_fla_ampere_safe_autotune
+
+        apply_fla_ampere_safe_autotune()
+
     output_dir = Path(cfg.train.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 

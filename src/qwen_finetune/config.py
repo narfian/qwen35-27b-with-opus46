@@ -83,6 +83,12 @@ class TrainConfig:
     train_on_responses_only: bool = True
     lora_save_dir: str = "./qwen35_27b_opus_lora"
 
+    # Runtime patch toggles. Default True keeps Ampere (A100) compatibility for
+    # FLA's chunk_gated_delta_rule kernels (otherwise Triton raises
+    # OutOfResources: shared memory at num_stages>=3). Set to False to keep
+    # FLA's stock autotune candidates (recommended only on Hopper/Blackwell).
+    fla_ampere_safe_autotune: bool = True
+
 
 @dataclass
 class PushConfig:
